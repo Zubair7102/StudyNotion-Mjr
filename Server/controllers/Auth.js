@@ -179,5 +179,71 @@ exports.signUp = async (req, res) =>{
 }
 
 // Login
+exports.login = async(req, res)=>{
+    try{
+        // extract email and password from the request body
+        const {email, password } = req.body;
+        
+        // check if the email and password are provided or not
+        if(!email || !password)
+        {
+            return res.status(400).jso({
+                success: false,
+                message: "Email and Passsword are required ",
+            })
+        }
+
+        // finding the user by the email
+        const user = await User.findOne({email});
+
+        // checking if the user exists or not in the database
+        if(!user)
+        {
+            return res.status(400).json({
+                success: false,
+                message: "User does not exits please Sign Up",
+            })
+        }
+
+        // comparing the provided password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        // if the password does not match return error
+        if(!isMatch)
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid password"
+            })
+        }
+
+        // creating a JWT token for the user 
+        const token = jwt.sign({userId: user._id, email: user.email}, process.env.JWT_SECRET,{
+            expiresIn: "2h", //token expiry time
+        })
+
+        // respond with success message 
+        res.status(200).json({
+            success: true,
+            message: "Logged in successfully",
+            user: {
+              id: user._id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              accountType: user.accountType,
+            },
+            token,
+        });
+    }
+    catch(error)
+    {
+        console.error("Error logging in: ", error.message);
+        res.status(500).json({
+          success: false,
+          message: "Error logging in",
+        });
+    }
+}
 
 // changePassword
