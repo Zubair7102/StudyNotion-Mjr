@@ -1,6 +1,7 @@
 // creating three middleware for auth isStudent isInstructor, isAdmin
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const user = require("../models/User");
 
 // auth
 exports.auth = (req, res, next) =>{
@@ -45,7 +46,23 @@ exports.auth = (req, res, next) =>{
 
 // isStudent
 exports.isStudent = (req, res, next)=>{
-    
+    try{
+        if(req.user.accountType !== "Student")
+        {
+            return res.status(401).json({
+                success: false,
+                message: "This is Protected routes for Srudents"
+            })
+        }
+        next();
+    }
+    catch(error)
+    {
+        return res.status(500).json({
+            success: false,
+            message: "User Role is not matching",
+        })
+    }
 }
 
 
