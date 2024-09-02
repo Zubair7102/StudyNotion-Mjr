@@ -48,6 +48,12 @@ const userDataSchema = new mongoose.Schema({
         // here type of image field is String because we are using URL
         required: true,
     },
+    token:{
+        type: String,
+    },
+    resetPasswordExpires: {
+        type:Date,
+    },
     courseProgress:[
         {
             type:mongoose.Schema.Types.ObjectId,
