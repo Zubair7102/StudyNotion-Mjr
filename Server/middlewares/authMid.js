@@ -67,6 +67,44 @@ exports.isStudent = (req, res, next)=>{
 
 
 // isInstructor
+exports.isInstructor = (req, res, next)=>{
+    try{
+        if(req.user.accountType !== "Instructor")
+        {
+            return res.status(401).json({
+                success: false,
+                message: "This is Protected routes for Instructors"
+            })
+        }
+        next();
+    }
+    catch(error)
+    {
+        return res.status(500).json({
+            success: false,
+            message: "User Role is not matching",
+        })
+    }
+}
 
 
 // isAdmin
+exports.isAdmin = (req, res, next)=>{
+    try{
+        if(req.user.accountType !== "Admin")
+        {
+            return res.status(401).json({
+                success: false,
+                message: "This is Protected routes for Admin"
+            })
+        }
+        next();
+    }
+    catch(error)
+    {
+        return res.status(500).json({
+            success: false,
+            message: "User Role is not matching",
+        })
+    }
+}
