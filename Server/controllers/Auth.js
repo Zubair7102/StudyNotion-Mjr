@@ -219,7 +219,7 @@ exports.login = async (req, res) => {
     if (isMatch) {
       // creating a JWT token for the user
       const token = jwt.sign(
-        { userId: user._id, email: user.email, role: user.role },
+        { userId: user._id, email: user.email, role: user.accountType },
         process.env.JWT_SECRET,
         {
           expiresIn: "2h", //token expiry time

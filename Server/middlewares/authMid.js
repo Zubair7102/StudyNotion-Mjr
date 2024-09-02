@@ -4,7 +4,7 @@ require("dotenv").config();
 const user = require("../models/User");
 
 // auth
-exports.auth = (req, res, next) =>{
+exports.auth = async (req, res, next) =>{
     try{
         // extract jw token
         const token = req.body.token;
@@ -29,7 +29,7 @@ exports.auth = (req, res, next) =>{
             return res.status(400).json({
                 success: false,
                 message: "token is invalid",
-            })    
+            });
         }
 
         next();
@@ -45,7 +45,7 @@ exports.auth = (req, res, next) =>{
 
 
 // isStudent
-exports.isStudent = (req, res, next)=>{
+exports.isStudent = async (req, res, next)=>{
     try{
         if(req.user.accountType !== "Student")
         {
@@ -67,7 +67,7 @@ exports.isStudent = (req, res, next)=>{
 
 
 // isInstructor
-exports.isInstructor = (req, res, next)=>{
+exports.isInstructor = async (req, res, next)=>{
     try{
         if(req.user.accountType !== "Instructor")
         {
