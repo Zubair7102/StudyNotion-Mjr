@@ -4,6 +4,7 @@ const User = require("../models/User");
 require("dotenv").config();
 const otpGenerator = require("otp-generator");
 const { mailSender } = require("../utils/mailSender");
+const jwt = require("jsonwebtoken"); // for token based authentication
 
 // sendOTP
 
@@ -50,9 +51,9 @@ exports.sendOTP = async (req, res) => {
     
 
     // create an entry for OTP in database
-    const otpBody = await OTP.create({email, otp, expiresAt});
+    const otpDb = await OTP.create({email, otp, expiresAt});
 
-    console.log(otpBody);
+    console.log(otpDb);
 
     // send OTP to the user's email (using mailsender function)
     await mailSender(email, "Your OTP code", `<p>Your OTP is ${otp}</p>`);
@@ -78,17 +79,23 @@ exports.sendOTP = async (req, res) => {
 exports.signUp = async (req, res) =>{
     try{
         // getting the data from the request
-        const {firstName, lastName, email, password, accountType} = req.body;
+        const {firstName, lastName, email, password, confirmPassword, accountType, phoneNo, otp} = req.body;
 
-        // validate the OTP
-        const otpRecord = await OTP.findOne({email, otpBody});
+        // validate that every field is filled correctly or not
+        if(!firstName || !lastName || !email || !password || !confirmPassword || !otp )
+        {
+            return res.status(403).json({
+                success: false,
+                message: "All fields are required to filled",
+            })
+        }
 
-        // checking if the OTP is Valid and not expired
-        if(!otpRecord || otpRecord.expiresAt < new Date())
+        // match if the password and confirmPassword are same or not 
+        if(password !== confirmPassword)
         {
             return res.status(400).json({
-                success: true, 
-                message: "Invalid or Expired OTP"
+                success: false,
+                message: "Password and ConfirmPassword does not match, please enter correctly",
             })
         }
 
@@ -100,6 +107,29 @@ exports.signUp = async (req, res) =>{
             return res.status(400).json({
                 success: false,
                 message: "User Already exists ",
+            })
+        }
+
+        // fetch the most recent OTP stored for the user
+        const recentOtp = await OTP.findOne({email}).sort({createdAt:-1}).limit(1);
+
+        console.log("recentOtp: " ,recentOtp);
+
+        // validate the recentOtp
+        if(recentOtp.length == 0)
+        {
+            // it means otp is not found
+            return res.status(400).json({
+                success: false,
+                message: "OTP not found"
+            })
+        }
+        else if(otp !== recentOtp.otp)
+        {
+            // invalid OTP
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP",
             })
         }
 
@@ -116,13 +146,20 @@ exports.signUp = async (req, res) =>{
             });
         }
 
+        const profileDetails = await Profile.create({
+            gender: null,
+            dateOfBirth: null,
+            about: null,
+            phoneNo: null,
+        })
         // creating the entry for the new User
-        const user = User.create({
-            firstName, lastName, email, password:hashedPassword, accountType
+        const user = await User.create({
+            firstName, lastName, email, phoneNo, password:hashedPassword, accountType, additionalDetails: profileDetails._id,
+            image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
         })
 
         // Delete the OTP after successfully verification
-        await OTP.deleteOne({email, otpBody})
+        await OTP.deleteOne({email, otpDb})
 
         res.status(200).json({
             success: true,
@@ -140,6 +177,7 @@ exports.signUp = async (req, res) =>{
         })
     }
 }
+
 // Login
 
 // changePassword
