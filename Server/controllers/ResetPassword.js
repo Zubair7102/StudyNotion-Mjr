@@ -2,42 +2,55 @@
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
-const {mailSender} = require("../utils/mailSender");
+const mailSender = require("../utils/mailSender");
 
 // request password Reset
-exports.requestPasswordReset = async (req, res)=>{
-    try{
-        const {email} = req.body;
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-        // check if the user exits
-        const user = await User.findOne({email});
-        if(!user)
-        {
-            return res.status(404).json({
-                success: false,
-                message: "User not Found",
-            });
-        }
-
-        // Generate a reset token
-        const resetToken = crypto.randomBytes(32).toString("hex");
-
-        // set token expiration time (eg 1hr)
-        const resetTokenExpires = Date.now() + 3600000;
-
-        // store the token and expiration in the user's record
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = resetTokenExpires;
-
-        await user.save();
-
-        // create reset password URL
-        
+    // check if the user exits
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not Found",
+      });
     }
-    catch(error)
-    {
 
-    }
-}
+    // Generate a reset token
+    const resetToken = crypto.randomUUID();
+    // update user by adding token and expiration time
+    const updateDetails = await User.findOneAndUpdate(
+      { email: email },
+      {
+        token: token,
+        resetPasswordExpires: Date.now() + 5 * 60 * 1000,
+      },
+      { new: true }
+    );
+
+    // create reset password URL
+    const resetUrl = `http://localhost:3000/update-password/${token}`;
+    // send mail
+    await mailSender(
+      user.email,
+      "Password Reset Request",
+      `<p>You requested a password reset. Click the link below to set a new password:</p>
+             <a href="${resetUrl}">Reset Password</a>
+             <p>If you did not request this, please ignore this email.</p>`
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
+  } catch (error) {
+    console.error("Error in password reset request:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error in sending password reset link",
+    });
+  }
+};
 
 // resetPassword
