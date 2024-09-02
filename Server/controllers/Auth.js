@@ -270,6 +270,15 @@ exports.changePassword = async (req, res) => {
         message: "All fields are required",
       });
     }
+
+    // Check if the new password and confirm password match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match",
+      });
+    }
+
     // fetch the user by ID
     const user = await User.findById(userId);
 
@@ -298,6 +307,23 @@ exports.changePassword = async (req, res) => {
     // Update the user's password in the database
     user.password = hashedNewPassword;
     await user.save();
+
+    // Send an email notification about password change
+    try {
+      await mailSender(
+        user.email,
+        "Password Updated Successfully",
+        `<p>Hello ${user.firstName},</p>
+           <p>Your password has been updated successfully. If you did not initiate this change, please contact our support team immediately.</p>
+           <p>Best regards,<br/>StudyNotion Team</p>`
+      );
+    } catch (error) {
+      console.error("Error changing password: ", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Error changing password",
+      });
+    }
 
     // responding with the success message
     res.status(200).json({
