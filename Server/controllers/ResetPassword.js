@@ -94,6 +94,10 @@ exports.resetPassword = async (req, res)=>{
     await User.findOneAndUpdate({token: token},
         {password: hashedPassword},
         {new:true},
+        // Without { new: true }:// The function would return the user's document as it was before the password was updated.
+        // With { new: true }:
+        // The function returns the user's document with the updated password. This can be useful if you want to confirm that the update has been applied correctly or if you need the updated state for further processing.
+
     );
     // Return success response
     res.status(200).json({
