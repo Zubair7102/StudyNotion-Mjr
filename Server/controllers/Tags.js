@@ -36,3 +36,27 @@ exports.createTag = async (req, res) =>{
         })
     }
 }
+
+// Get all Tags
+exports.getAllTags = async (req, res) => {
+    try{
+        const tags = await Tag.find({}, {name: trye, description: true});
+
+        console.log(tags);
+
+        // returning successfull response
+        return res.status(200).json({
+            success: true,
+            message: "All tags returned successfully",
+            tags,
+        })
+    }
+    catch(error)
+    {
+        console.log("Error creating tag: ", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching tag",
+        })
+    }
+}
