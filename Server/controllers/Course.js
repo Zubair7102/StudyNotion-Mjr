@@ -42,6 +42,7 @@ exports.createCourse = async (req, res) => {
 
     // check if the instructor exists
     const userId = req.user.userId;
+    // TODO**** check above line of code
     const instructorDetails = await User.findById(userId);
     console.log("Instructor Details: ",instructorDetails);
 
@@ -154,6 +155,78 @@ exports.getAllCourses = async (req, res)=>{
     res.status(500).json({
       success: false,
       message: "Error fetching courses",
+    });
+  }
+}
+
+// Get Single Course by ID
+exports.getCourseById = async (req, res) =>{
+  try{
+    const {courseId} = req.params;
+    // Find course by ID
+    const course = await Course.findById(courseId)
+
+    // Check if course exists
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Course retrieved successfully",
+      data: course,
+    });
+  }
+  catch(error)
+  {
+    console.error("Error retrieving course:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving course",
+    });
+  }
+}
+
+
+// Delete Course by Its ID
+exports.deleteCourse = async(req, res)=>{
+  try{
+    const {courseId} = req.params;
+
+    const deletedCourse = await Course.findByIdAndDelete({courseId});
+    console.log(deleteCourse);
+
+    // Check if course exists
+    if (!deletedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    // remove the Course from the instructor's courses list
+    await User.findByIdAndUpdate(deletedCourse.instructor, {
+      $pull:{courses: deletedCourse._id},
+    })
+
+    // Remove the course from the tag's courses list
+    await Tag.findByIdAndUpdate(deletedCourse.tag, {
+      $pull: {course: deletedCourse._id},
+    })
+    // return response
+    return res.status(200).json({
+      success: true,
+      message: "Course deleted successfully",
+    });
+  }
+  catch(error)
+  {
+    console.error("Error deleting course:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting course",
     });
   }
 }
