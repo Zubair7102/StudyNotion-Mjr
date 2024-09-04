@@ -117,9 +117,43 @@ exports.createCourse = async (req, res) => {
   catch (error) 
   {
     console.error("Error creating course:", error.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Error creating course",
     });
   }
 };
+
+// Get All Courses
+exports.getAllCourses = async (req, res)=>{
+  try{
+    const allCourses = await Course.find({},
+      {courseName: true,
+        price: true,
+        thumbnail: true,
+        instructor: true,
+        ratingAndReviews: true,
+        studentsEnrolled: true,
+      }
+    )
+    .populate("instructor", "name")
+    .exec();
+    //   .populate("courseContent", "title")
+    //   .populate("tag", "name");
+
+    res.status(200).json({
+      success: true,
+      message: "Courses retrieved successfully",
+      courses,
+    });
+
+  }
+  catch(error)
+  {
+    console.error("Error fetching courses:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching courses",
+    });
+  }
+}
