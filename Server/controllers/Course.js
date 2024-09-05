@@ -65,7 +65,7 @@ exports.createCourse = async (req, res) => {
     }
 
     // uploading image to cloudinary 
-    const thumbnailImage = await uploadImageToCloudinary(thumbnail, "process.env.FOLDER_NAME");
+    const thumbnailImage = await uploadImageToCloudinary(thumbnail, process.env.FOLDER_NAME);
     if (!thumbnailImage || !thumbnailImage.secure_url) {
       return res.status(500).json({
         success: false,
@@ -129,7 +129,8 @@ exports.createCourse = async (req, res) => {
 exports.getAllCourses = async (req, res)=>{
   try{
     const allCourses = await Course.find({},
-      {courseName: true,
+      {
+        name: true,
         price: true,
         thumbnail: true,
         instructor: true,
@@ -137,7 +138,7 @@ exports.getAllCourses = async (req, res)=>{
         studentsEnrolled: true,
       }
     )
-    .populate("instructor", "name")
+    .populate("instructor", "firstName lastName")
     .exec();
     //   .populate("courseContent", "title")
     //   .populate("category", "name");
@@ -145,7 +146,7 @@ exports.getAllCourses = async (req, res)=>{
     res.status(200).json({
       success: true,
       message: "Courses retrieved successfully",
-      courses,
+      courses: allCourses,
     });
 
   }
@@ -165,6 +166,9 @@ exports.getCourseById = async (req, res) =>{
     const {courseId} = req.params;
     // Find course by ID
     const course = await Course.findById(courseId)
+    .populate("instructor", "firstName lastName")
+      .populate("category", "name description")
+      .populate("ratingAndReviews");
 
     // Check if course exists
     if (!course) {
@@ -196,7 +200,7 @@ exports.deleteCourse = async(req, res)=>{
     const {courseId} = req.params;
 
     const deletedCourse = await Course.findByIdAndDelete({courseId});
-    console.log(deleteCourse);
+    // console.log(deletedCourse);
 
     // Check if course exists
     if (!deletedCourse) {
