@@ -1,7 +1,7 @@
 const Course = require("../models/Course");
 const User = require("../models/User");
 const Section = require("../models/Section");
-const Tag = require("../models/Tag");
+const Category = require("../models/Category");
 const RatingAndReview = require("../models/RatingAndReview");
 const {uploadImageToCloudinary} = require("../utils/imageUploader");
 require("dotenv").config();
@@ -16,7 +16,7 @@ exports.createCourse = async (req, res) => {
       whatYouWillLearn,
       // courseContentId,
       price,
-      tagId,
+      categoryId,
     } = req.body;
 
     // get thumbnail
@@ -30,7 +30,7 @@ exports.createCourse = async (req, res) => {
       // !instructorId ||
       // !courseContentId ||
       !price ||
-      !tagId ||
+      !categoryId ||
       !whatYouWillLearn |
       !thumbnail
     ) {
@@ -54,13 +54,13 @@ exports.createCourse = async (req, res) => {
       });
     }
 
-    // check given tag is valid or not 
-    const tagDetails = await Tag.findById(tagId);
-    if(!tagDetails)
+    // check given category is valid or not 
+    const categoryDetails = await Category.findById(categoryId);
+    if(!categoryDetails)
     {
       return res.status(404).json({
         success: false,
-        message: "Tag not found",
+        message: "category not found",
       });
     }
 
@@ -80,7 +80,7 @@ exports.createCourse = async (req, res) => {
       instructor: instructorDetails._id,
       price,
       thumbnail: thumbnailImage.secure_url,
-      tag: tagId,
+      category: categoryId,
       whatYouWillLearn,
     })
 
@@ -95,9 +95,9 @@ exports.createCourse = async (req, res) => {
       {new: true},
     )
 
-    // update the Tag schema 
-    await Tag.findByIdAndUpdate(
-      {_id: tagDetails._id},
+    // update the category schema 
+    await Category.findByIdAndUpdate(
+      {_id: categoryDetails._id},
       {
         $push:{
           course: newCourse._id,
@@ -140,7 +140,7 @@ exports.getAllCourses = async (req, res)=>{
     .populate("instructor", "name")
     .exec();
     //   .populate("courseContent", "title")
-    //   .populate("tag", "name");
+    //   .populate("category", "name");
 
     res.status(200).json({
       success: true,
@@ -211,8 +211,8 @@ exports.deleteCourse = async(req, res)=>{
       $pull:{courses: deletedCourse._id},
     })
 
-    // Remove the course from the tag's courses list
-    await Tag.findByIdAndUpdate(deletedCourse.tag, {
+    // Remove the course from the category's courses list
+    await Category.findByIdAndUpdate(deletedCourse.category, {
       $pull: {course: deletedCourse._id},
     })
     // return response
