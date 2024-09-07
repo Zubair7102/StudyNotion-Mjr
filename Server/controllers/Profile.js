@@ -20,7 +20,8 @@ exports.updateProfile= async (req, res) =>{
 
     
         // find profile
-        const userDetails = await User.findById(id);const profileId = userDetails.additionalDetails;
+        const userDetails = await User.findById(id);
+        const profileId = userDetails.additionalDetails;
         const profileDetails = await Profile.findById(profileId);
 
         // update  profile
