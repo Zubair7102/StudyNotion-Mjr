@@ -60,3 +60,67 @@ exports.getAllCategory = async (req, res) => {
         })
     }
 }
+
+
+// ****************************************************************************************************************************** TO BE CHECKED
+// Category Page Details
+exports.categoryPageDetails = async (req, res) =>{
+    try{
+        const {categoryId} = req.body;
+
+        // Get course for the specified category
+        const selectedCategory = await Category.findById(categoryId)
+        .populate("course")
+        .exec();
+
+        console.log(selectedCategory);
+
+        // Handle the case when the category is not found 
+        if(!selectedCategory)
+        {
+            return res.status(404).json({
+                success: true,
+                message: "Category not found",
+            })
+        }
+
+        // Handle the case when there are no courses
+        if(selectedCategory.course.length === 0)
+        {
+            return res.status(404).json({
+                success: true,
+                message: "No course found for the selected category",
+            })
+        }
+        const selectedCourses = selectedCategory.course;
+
+        // Get course for other categories
+        const categoriesExpectedSelected = await Category.find({_id: categoryId
+        }).populate("courses");
+
+        let differentCourses = [];
+        for(const category of categoriesExpectedSelected)
+        {
+            differentCourses.push(...category.course);
+        }
+
+        // Get top Selling courses across all categories
+        const allCategories = await Category.find().populate("course");
+        const allCourses = allCategories.flatMap(Category) = Category.course;
+
+        const mostSellingCourses = allCourses.sort((a, b) => b.sold - a.sold).slice(0, 10);
+
+        res.status(200).json({
+            selectedCourses: selectedCourses,
+            differentCourses: differentCourses,
+            mostSellingCourses: mostSellingCourses,
+        })
+    }catch(error)
+    {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        })
+    }
+}
