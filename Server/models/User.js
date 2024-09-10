@@ -30,6 +30,14 @@ const userDataSchema = new mongoose.Schema({
         enum: ["Admin", "Student", "Instructor"],
         required: true,
     },
+    active: {
+        type: Boolean,
+        default: true,
+    },
+    approved: {
+        type: Boolean,
+        default: true,
+    },
     additionalDetails:{
         type:mongoose.Schema.Types.ObjectId,
         // This specifies that the additionalDetails field is of type ObjectId, which is a special data type in MongoDB used for referencing other documents.
@@ -60,6 +68,8 @@ const userDataSchema = new mongoose.Schema({
             ref: "CourseProgress",
         }
     ]
-})
+},
+// Add timestamps for when the document is created and last modified
+{ timestamps: true })
 
 module.exports = mongoose.model("userData", userDataSchema);

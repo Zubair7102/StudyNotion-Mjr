@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const courseSchema = new mongoose.Schema({
-  name: {
+  courseName: {
     type: String,
     required: true,
     trim: true,
@@ -18,11 +18,11 @@ const courseSchema = new mongoose.Schema({
   whatYouWillLearn: {
     type: String,
   },
-  courseContent: {
+  courseContent:[{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Section",
     required: true,
-  },
+  }],
   ratingAndReviews: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -45,7 +45,7 @@ const courseSchema = new mongoose.Schema({
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
-    required: true,
+    // required: true,
   },
   studentsEnrolled: [
     {
@@ -60,6 +60,10 @@ const courseSchema = new mongoose.Schema({
   status:{
     type: String,
     enum: ["Draft", "Published"],
+  },
+  createdAt:{
+    type: Date,
+    default: Date.now,
   },
 });
 
