@@ -12,11 +12,9 @@ const profileSchema = new mongoose.Schema({
         type:String,
         trim: true,
     },
-    contactNumber:{
+    phoneNo:{
         type:Number,
-        trim: true,
     }
-    
 })
 
-module.exports = mongoose.module("Profile", profileSchema);
+module.exports = mongoose.model("Profile", profileSchema);

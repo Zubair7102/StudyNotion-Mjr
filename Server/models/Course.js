@@ -21,18 +21,19 @@ const courseSchema = new mongoose.Schema({
   courseContent:[{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Section",
-    required: true,
+    // required: true,
   }],
   ratingAndReviews: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "RatingAndReview",
-      required: true,
-      trim: true,
+      // required: true,
+      // trim: true,
     },
   ],
   tag:{
-    type:String,
+    type:[String],
+    required: true,
   },
   price: {
     type: Number,

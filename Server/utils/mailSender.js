@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
-const OTP = require("./models/OTP")
-require("dotenv").config();
+// const OTP = require("./models/OTP")
+// require("dotenv").config();
 
  exports.mailSender = async(email, title, body)=> {
     try{

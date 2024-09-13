@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { mailSender } = require("../utils/mailSender");
+const emailTemplate = require("../mail/emailVerificationTemplate")
 
 const otpSchema = new mongoose.Schema({
     email:{
@@ -26,8 +27,8 @@ const otpSchema = new mongoose.Schema({
 // function to send email
 async function sendVerificationEmail(email, otp){
     try{
-        const mailResponse = await mailSender(email, "Verification Email from StudyNotion", otp);
-        console.log("Email sent successfully: ", mailResponse);
+        const mailResponse = await mailSender(email, "Verification Email from StudyNotion",emailTemplate(otp));
+        console.log("Email sent successfully: ", mailResponse.response);
         }
     catch(error)
     {
@@ -40,7 +41,11 @@ async function sendVerificationEmail(email, otp){
 otpSchema.pre("save", async function(next) {
     // OTPSchema.pre("save", async function(next) { ... }):
     // This line sets up a pre-save middleware on the OTP schema. A "pre-save" hook means this function will run before the document is saved to the database.
+
+    // Only send an email when a new document is created
+    if(this.isNew){
     await sendVerificationEmail(this.email, this.otp);
+    }
     next();
     // Calling next() signals Mongoose to proceed with the next middleware or to complete the save operation.
     //  The next() function is essential for controlling the flow within middleware. Without it, Mongoose would not know when to continue, causing the operation to hang.

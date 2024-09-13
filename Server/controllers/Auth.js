@@ -1,14 +1,15 @@
 const bcrypt = require("bcrypt");
 const OTP = require("../models/OTP");
 const User = require("../models/User");
-require("dotenv").config();
 const otpGenerator = require("otp-generator");
 const { mailSender } = require("../utils/mailSender");
 const jwt = require("jsonwebtoken"); // for token based authentication
 require("dotenv").config();
+const Profile = require("../models/Profile")
 
+
+//********************************************************************************************************************************************************************
 // sendOTP
-
 exports.sendOTP = async (req, res) => {
   try {
     // fetch email from request body
@@ -42,14 +43,10 @@ exports.sendOTP = async (req, res) => {
         lowerCaseAlphabets: false,
         specialChars: false,
       });
-      result = await OTP.findOne({ otp: otp });
     }
 
-    // Set expiration time for OTP (e.g., 5 minutes from now)
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
     // create an entry for OTP in database
-    const otpDb = await OTP.create({ email, otp, expiresAt });
+    const otpDb = await OTP.create({ email, otp });
 
     console.log(otpDb);
 
@@ -60,6 +57,7 @@ exports.sendOTP = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Otp sent successfully",
+      otp: otp,
     });
   } catch (error) {
     console.error("Error sending OTP:", error.message);
@@ -69,6 +67,8 @@ exports.sendOTP = async (req, res) => {
     });
   }
 };
+
+// **********************************************************************************************************************************************************************
 
 // signUp
 exports.signUp = async (req, res) => {
@@ -115,25 +115,25 @@ exports.signUp = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User Already exists ",
+        message: "User Already exists Please Sign in",
       });
     }
 
     // fetch the most recent OTP stored for the user
-    const recentOtp = await OTP.findOne({ email })
+    const recentOtp = await OTP.find({ email })
       .sort({ createdAt: -1 })
       .limit(1);
 
     console.log("recentOtp: ", recentOtp);
 
     // validate the recentOtp
-    if (recentOtp.length == 0) {
+    if (recentOtp.length === 0) {
       // it means otp is not found
       return res.status(400).json({
         success: false,
         message: "OTP not found",
       });
-    } else if (otp !== recentOtp.otp) {
+    } else if (otp !== recentOtp[0].otp) {
       // invalid OTP
       return res.status(400).json({
         success: false,
@@ -152,6 +152,10 @@ exports.signUp = async (req, res) => {
       });
     }
 
+    // allow if the user is student 
+    let approved = accountType === "Instructor" ? false : true;
+
+    // create profile for user
     const profileDetails = await Profile.create({
       gender: null,
       dateOfBirth: null,
@@ -166,12 +170,10 @@ exports.signUp = async (req, res) => {
       phoneNo,
       password: hashedPassword,
       accountType,
+      approved,
       additionalDetails: profileDetails._id,
       image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
     });
-
-    // Delete the OTP after successfully verification
-    await OTP.deleteOne({ email, otpDb });
 
     return res.status(200).json({
       success: true,
@@ -187,6 +189,7 @@ exports.signUp = async (req, res) => {
   }
 };
 
+// **********************************************************************************************************************************************************************
 // Login
 exports.login = async (req, res) => {
   try {
@@ -202,7 +205,7 @@ exports.login = async (req, res) => {
     }
 
     // finding the user by the email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate("additionalDetails").exec();
 
     // checking if the user exists or not in the database
     if (!user) {
@@ -212,41 +215,35 @@ exports.login = async (req, res) => {
       });
     }
 
-    // comparing the provided password with the stored hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    // if the password does not match return error
-    if (isMatch) {
-      // creating a JWT token for the user
+    // Generate JWT token and Compare Password
+    if (await bcrypt.compare(password, user.password)) {
       const token = jwt.sign(
-        { userId: user._id, email: user.email, role: user.accountType },
+        { email: user.email, id: user._id, role: user.accountType },
         process.env.JWT_SECRET,
         {
-          expiresIn: "2h", //token expiry time
+          expiresIn: "24h",
         }
-      );
-      user.token = token;
-      user.password = undefined;
+      )
 
+      // Save token to user document in database
+      user.token = token
+      user.password = undefined
+      // Set cookie for token and return success response
       const options = {
-        expiresIn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), //3 days
+        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         httpOnly: true,
-        // htpOnly means that the cookie can not be accessed at the client side
-      };
-
-      // create cookie and send response
+      }
       res.cookie("token", token, options).status(200).json({
         success: true,
         token,
         user,
-        message: "User Logged in Successfully",
-      });
+        message: `User Login Success`,
+      })
     } else {
-      // password did not matched
       return res.status(401).json({
         success: false,
-        message: "Password did not matched the given email",
-      });
+        message: `Password is incorrect`,
+      })
     }
   } catch (error) {
     console.error("Error logging in: ", error.message);
@@ -257,14 +254,17 @@ exports.login = async (req, res) => {
   }
 };
 
+
+// **********************************************************************************************************************************************************************
+
 // changePassword
 exports.changePassword = async (req, res) => {
   try {
-    // extract user ID, current password, new password, and confirm password from the request body
-    const { userId, currentPassword, newPassword, confirmPassword } = req.body;
-
+    
+      const user = await User.findById(req.user.id)
+      const {currentPassword, newPassword, confirmPassword} = req.body;
     // validate that all are provided or not
-    if (!userId || !currentPassword || !newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -278,9 +278,6 @@ exports.changePassword = async (req, res) => {
         message: "New password and confirm password do not match",
       });
     }
-
-    // fetch the user by ID
-    const user = await User.findById(userId);
 
     // checking if the user exists or not
     if (!user) {
@@ -304,9 +301,10 @@ exports.changePassword = async (req, res) => {
     // Hash the new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update the user's password in the database
-    user.password = hashedNewPassword;
-    await user.save();
+    const updatedUserDetails = await User.findByIdAndUpdate(req.user.id,
+      {password: hashedNewPassword},
+      {new: true},
+    )
 
     // Send an email notification about password change
     try {
@@ -314,7 +312,7 @@ exports.changePassword = async (req, res) => {
         user.email,
         "Password Updated Successfully",
         `<p>Hello ${user.firstName},</p>
-           <p>Your password has been updated successfully. If you did not initiate this change, please contact our support team immediately.</p>
+           <p>Your password has been updated successfully</p>
            <p>Best regards,<br/>StudyNotion Team</p>`
       );
     } catch (error) {

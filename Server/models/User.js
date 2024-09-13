@@ -19,7 +19,7 @@ const userDataSchema = new mongoose.Schema({
     },
     phoneNo:{
         type: Number,
-        required: true,
+        // required: true,
     },
     password:{
         type: String,
@@ -46,11 +46,11 @@ const userDataSchema = new mongoose.Schema({
         required: true,
         ref: "Profile",
     },
-    courses:{
+    courses: [{
         type:mongoose.Schema.Types.ObjectId,
         // required: true,
         ref: "Course",
-    },
+    }],
     image:{
         type:String,
         // here type of image field is String because we are using URL
