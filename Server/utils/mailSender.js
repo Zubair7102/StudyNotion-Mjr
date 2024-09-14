@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 // const OTP = require("./models/OTP")
 // require("dotenv").config();
 
- exports.mailSender = async(email, title, body)=> {
+const mailSender = async(email, title, body)=> {
     try{
         // transporter
         let transporter = nodemailer.createTransport({
@@ -30,3 +30,5 @@ const nodemailer = require("nodemailer");
         console.log(error.message);
     }
 }
+
+module.exports = mailSender;
