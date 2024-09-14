@@ -17,10 +17,10 @@ const userDataSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
-    phoneNo:{
-        type: Number,
-        // required: true,
-    },
+    // phoneNo:{
+    //     type: Number,
+    //     // required: true,
+    // },
     password:{
         type: String,
         required: true,
