@@ -36,14 +36,15 @@ router.post("/updateSection", auth, isInstructor, updateSection);
 // Delete section
 router.delete("/deleteSection", auth, isInstructor, deleteSection)
 
-// edit seb section 
-router.post("/updateSubSection", auth, isInstructor, updateSubSection);
 
+// edit sub section 
+router.post("/updateSubSection", auth, isInstructor, updateSubSection);
 // delete subSection
 router.delete("/deleteSubSection", auth, isInstructor, deletedSubSection);
-
 // add subSection to a section
 router.post("/addSubSection", auth, isInstructor, createSubSection);
+router.get("/getAllSubSections", getAllSubSections);
+
 
 // get all registered courses
 router.get("/getAllCourses", getAllCourses);
@@ -72,7 +73,7 @@ router.post("/updateCourseProgress", auth, isStudent, updateCourseProgress);
 // category is created by Admin
 router.post("/createCategory", auth, isAdmin, createCategory);
 router.get("/showAllCategory", getAllCategory);
-router.post("/getCategoryPageDetails", categoryPageDetails);
+router.get("/getCategoryPageDetails", categoryPageDetails);
 
 
 // Rating And Review Route
