@@ -64,11 +64,16 @@ exports.getAllCategory = async (req, res) => {
 exports.categoryPageDetails = async (req, res) => {
   try {
     const { categoryId } = req.body;
+    console.log("CategoryId is: ", categoryId);
 
     // Get course for the specified category
     const selectedCategory = await Category.findById(categoryId)
-      .populate("courses")
-      .exec();
+    .populate({
+      path: "courses",
+      match: { status: "Published" },
+      populate: "ratingAndReviews",
+    })
+    .exec()
 
     console.log(selectedCategory);
 
@@ -83,7 +88,7 @@ exports.categoryPageDetails = async (req, res) => {
     // Handle the case when there are no courses
     if (selectedCategory.courses.length === 0) {
       return res.status(404).json({
-        success: true,
+        success: false,
         message: "No course found for the selected category",
       });
     }
@@ -111,9 +116,12 @@ exports.categoryPageDetails = async (req, res) => {
       .slice(0, 10);
 
     res.status(200).json({
-      selectedCourses: selectedCourses,
-      differentCourses: differentCourses,
-      mostSellingCourses: mostSellingCourses,
+      success: true,
+        data: {
+          selectedCourses,
+          differentCourses,
+          mostSellingCourses,
+        },
     });
   } catch (error) {
     return res.status(500).json({

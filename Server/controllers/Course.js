@@ -4,10 +4,10 @@ const User = require("../models/User");
 const Section = require("../models/Section");
 const SubSection = require("../models/SubSection");
 const Category = require("../models/Category");
-const { uploadImageToCloudinary } = require("../utils/imageUploader");
+const  uploadImageToCloudinary = require("../utils/imageUploader");
 require("dotenv").config();
 const CourseProgress = require("../models/CourseProgress");
-const {convertSecondsToDuration} = require("../utils/secToDuration");
+const convertSecondsToDuration = require("../utils/secToDuration");
 
 // create a new Course
 exports.createCourse = async (req, res) => {
@@ -20,10 +20,12 @@ exports.createCourse = async (req, res) => {
       // courseContentId,
       price,
       categoryId,
+      // tag: _tag,
+      // instructions: _instructions,
     } = req.body;
 
     // get thumbnail
-    const thumbnail = req.files?.thumbnailImage;
+    const thumbnail = req.files.thumbnailImage;
 
     // Validate required fields
     if (
@@ -42,9 +44,10 @@ exports.createCourse = async (req, res) => {
     }
 
     // check if the instructor exists
-    const userId = req.user.userId;
-    // TODO**** check above line of code
-    const instructorDetails = await User.findById(userId);
+    const userId = req.user.id;
+    const instructorDetails = await User.findById(userId, {
+      accountType: "Instructor",
+    })
     console.log("Instructor Details: ", instructorDetails);
 
     if (!instructorDetails) {
@@ -82,8 +85,10 @@ exports.createCourse = async (req, res) => {
       instructor: instructorDetails._id,
       price,
       thumbnail: thumbnailImage.secure_url,
-      category: categoryId,
+      category: categoryDetails._id,
       whatYouWillLearn,
+      // instructions,
+      // tag,
     });
 
     // add the new course to the courses array of the User Schema of instructor
@@ -99,7 +104,7 @@ exports.createCourse = async (req, res) => {
 
     // update the category schema
     await Category.findByIdAndUpdate(
-      { _id: categoryDetails._id },
+      categoryId,
       {
         $push: {
           courses: newCourse._id,
@@ -118,15 +123,17 @@ exports.createCourse = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error creating course",
+      error: error.message
     });
   }
 };
 
+// **************************************************************************************************************************************************
 // Get All Courses
 exports.getAllCourses = async (req, res) => {
   try {
     const allCourses = await Course.find(
-      {},
+      {status: "Published" },
       {
         courseName: true,
         price: true,
@@ -136,7 +143,7 @@ exports.getAllCourses = async (req, res) => {
         studentsEnrolled: true,
       }
     )
-      .populate("instructor", "firstName lastName")
+      .populate("instructor")
       .exec();
     //   .populate("courseContent", "title")
     //   .populate("category", "name");
@@ -151,41 +158,61 @@ exports.getAllCourses = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching courses",
+      error: error.message,
     });
   }
 };
 
+// ***********************************************************************************************************************************************************************************************************
 // Get Single Course by ID
 exports.getCourseById = async (req, res) => {
   try {
-    const { courseId } = req.params;
-
-    // Validate courseId
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Course ID format.",
-      });
-    }
-
+    const { courseId } = req.body;
     // Find course by ID
-    const course = await Course.findById(courseId)
-      .populate("instructor", "firstName lastName")
-      .populate("category", "name description")
-      .populate("ratingAndReviews");
+    const course = await Course.findOne(courseId)
+    .populate({
+      path: "instructor",
+      populate: {
+        path: "additionalDetails",
+      },
+    })
+    .populate("category")
+    .populate("ratingAndReviews")
+    .populate({
+      path: "courseContent",
+      populate: {
+        path: "subSection",
+        select: "-videoUrl",
+      },
+    })
+    .exec()
+
 
     // Check if course exists
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Course not found",
+        message: `Could not find course with id: ${courseId}`,
       });
     }
+
+    let totalDurationInSeconds = 0
+    course.courseContent.forEach((content) => {
+      content.subSection.forEach((subSection) => {
+        const timeDurationInSeconds = parseInt(subSection.timeDuration)
+        totalDurationInSeconds += timeDurationInSeconds
+      })
+    })
+
+    const totalDuration = convertSecondsToDuration(totalDurationInSeconds)
 
     return res.status(200).json({
       success: true,
       message: "Course retrieved successfully",
-      data: course,
+      data: {
+        courseDetails,
+        totalDuration,
+      },
     });
   } catch (error) {
     console.error("Error retrieving course:", error.message);
@@ -195,6 +222,9 @@ exports.getCourseById = async (req, res) => {
     });
   }
 };
+
+
+// ******************************************************************************************************************************************************************************
 
 // Delete the Course
 exports.deleteCourse = async (req, res) => {
@@ -247,20 +277,15 @@ exports.deleteCourse = async (req, res) => {
     })
   }
 }
+
+// ****************************************************************************************************************************************************************
+
 // edit course details
 exports.editCourse = async (req, res) => {
   try {
     // Get courseId
     const { courseId } = req.body;
     const updates = req.body;
-
-    // Validate courseId
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Course ID format.",
-      });
-    }
 
     const course = await Course.findById(courseId);
     if (!course) {
@@ -301,7 +326,7 @@ exports.editCourse = async (req, res) => {
         populate: {
           path: "subSection",
         },
-      });
+      }).exec();
 
     res.json({
       success: true,
@@ -317,12 +342,12 @@ exports.editCourse = async (req, res) => {
     });
   }
 };
-
+// ****************************************************************************************************************************************************************
 // Get a list of Course for a given Instructor
 exports.getInstructorCourses = async (req, res) => {
   try {
     // Get the instructor ID from the authenticated user
-    const instructorId = req.user.userId;
+    const instructorId = req.user.id;
 
     // Find all courses belonging to the instructor
     const instructorCourses = await Course.find({
@@ -344,27 +369,30 @@ exports.getInstructorCourses = async (req, res) => {
   }
 };
 
+// ****************************************************************************************************************************************************************
+
 exports.getFullCourseDetails = async (req, res) => {
   try {
     const { courseId } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Find course details
-    const courseDetails = await Course.findById(courseId)
-      .populate({
-        path: "instructor",
-        populate: {
-          path: "additionalDetails",
-        },
-      })
-      .populate("category")
-      .populate("ratingAndReviews")
-      .populate({
-        path: "courseContent",
-        populate: {
-          path: "subSection",
-        },
-      });
+    const courseDetails = await Course.findOne(courseId)
+    .populate({
+      path: "instructor",
+      populate: {
+        path: "additionalDetails",
+      },
+    })
+    .populate("category")
+    .populate("ratingAndReviews")
+    .populate({
+      path: "courseContent",
+      populate: {
+        path: "subSection",
+      },
+    })
+    .exec()
 
     if (!courseDetails) {
       return res.status(400).json({
@@ -397,7 +425,9 @@ exports.getFullCourseDetails = async (req, res) => {
       data: {
         courseDetails,
         totalDuration,
-        completedVideos: courseProgressCount?.completedVideos || [],
+        completedVideos: courseProgressCount?.completedVideos
+          ? courseProgressCount?.completedVideos
+          : [],
       },
     });
   } catch (error) {
@@ -409,39 +439,30 @@ exports.getFullCourseDetails = async (req, res) => {
   }
 };
 
+// ****************************************************************************************************************************************************************
 
 // Get Course Details
 exports.getCourseDetails = async (req, res) => {
   try {
     const { courseId } = req.body;
 
-    // Validate courseId
-    if (!mongoose.Types.ObjectId.isValid(courseId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Course ID format.",
-      });
-    }
-
     // Find the course details by ID
     const courseDetails = await Course.findOne({ _id: courseId })
-      .populate({
-        path: "instructor",
-        populate: {
-          path: "additionalDetails",
-        },
-      })
-      .populate("category")
-      .populate("ratingAndReviews")
-      .populate({
-        path: "courseContent",
-        populate: {
-          path: "subSection",
-          select: "-videoUrl", // Exclude video URL from subSection
-        },
-      })
-      .exec();
-
+    .populate({
+      path: "instructor",
+      populate: {
+        path: "additionalDetails",
+      },
+    })
+    .populate("category")
+    // .populate("ratingAndReviews")
+    .populate({
+      path: "courseContent",
+      populate: {
+        path: "subSection",
+      },
+    })
+    .exec()
     // Check if the course exists
     if (!courseDetails) {
       return res.status(404).json({
@@ -454,10 +475,11 @@ exports.getCourseDetails = async (req, res) => {
     let totalDurationInSeconds = 0;
     courseDetails.courseContent.forEach((content) => {
       content.subSection.forEach((subSection) => {
-        const timeDurationInSeconds = parseInt(subSection.timeDuration) || 0; // Safe parse with default 0
+        const timeDurationInSeconds = parseInt(subSection.timeDuration, 10);
         totalDurationInSeconds += timeDurationInSeconds;
       });
     });
+
 
     // Convert total duration to a readable format
     const totalDuration = convertSecondsToDuration(totalDurationInSeconds);
@@ -478,3 +500,5 @@ exports.getCourseDetails = async (req, res) => {
     });
   }
 };
+
+// ****************************************************************************************************************************************************************

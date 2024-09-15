@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const OTP = require("../models/OTP");
 const User = require("../models/User");
 const otpGenerator = require("otp-generator");
-const { mailSender } = require("../utils/mailSender");
+const mailSender = require("../utils/mailSender")
 const jwt = require("jsonwebtoken"); // for token based authentication
 require("dotenv").config();
 const Profile = require("../models/Profile")
@@ -13,7 +13,7 @@ const Profile = require("../models/Profile")
 exports.sendOTP = async (req, res) => {
   try {
     // fetch email from request body
-    const { email } = req.body;
+    const {email}  = req.body;
 
     // checking if the user already exits or not
     const existingUser = await User.findOne({ email });
@@ -35,7 +35,7 @@ exports.sendOTP = async (req, res) => {
     console.log("OTP: ", otp);
 
     // check if the generated otp is unique or not
-    let result = await OTP.findOne({ otp: otp });
+    let result = await OTP.findOne({ otp });
 
     while (result) {
       otp = otpGenerator.generate(6, {
@@ -51,6 +51,7 @@ exports.sendOTP = async (req, res) => {
     console.log(otpDb);
 
     // send OTP to the user's email (using mailsender function)
+    console.log(mailSender);
     await mailSender(email, "Your OTP code", `<p>Your OTP is ${otp}</p>`);
 
     // return the response
@@ -218,7 +219,7 @@ exports.login = async (req, res) => {
     // Generate JWT token and Compare Password
     if (await bcrypt.compare(password, user.password)) {
       const token = jwt.sign(
-        { email: user.email, id: user._id, role: user.accountType },
+        { email: user.email, id: user._id, accountType: user.accountType },
         process.env.JWT_SECRET,
         {
           expiresIn: "24h",

@@ -8,7 +8,7 @@ exports.createRatingAndReview = async (req, res) => {
   try {
     // fetch the courseId rating and review from the body
     const { courseId, rating, review } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // validate the input
     if (!courseId || !rating || !review) {
@@ -149,7 +149,7 @@ exports.getAverageRating = async (req, res) => {
     const result = await RatingAndReview.aggregate([
       {
         $match: {
-          course: new mongoose.Types.ObjectId(courseId), // Ensure correct ObjectId format
+          course: new mongoose.Types.ObjectId(courseId),
         },
       },
       {
@@ -195,7 +195,7 @@ exports.getAllRating = async(req, res)=>{
         })
         .populate({
             path: "course",
-            select: "name",
+            select: "courseName",
         }).exec();
 
         // Return successful response

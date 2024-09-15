@@ -22,7 +22,6 @@ exports.createSection = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Course not Found",
-        updatedCourse,
       });
     }
 
@@ -40,13 +39,19 @@ exports.createSection = async (req, res) => {
             }
         },
         {new: true},
-    )
+    ).populate({
+      path: "courseContent",
+      populate: {
+        path: "subSection",
+      },
+    })
+    .exec();
 
     // return successfull reponse
     return res.status(201).json({
       success: true,
       message: "Section created successfully",
-      data: newSection,
+      data: updatedCourse,
     });
   } catch (error) {
     console.error("Error creating section:", error.message);
@@ -61,7 +66,8 @@ exports.createSection = async (req, res) => {
 exports.updateSection = async (req, res) => {
   try {
 
-    const { sectionName, sectionId  } = req.body;
+    const { sectionName, sectionId, courseId } = req.body;
+    
     // data validation
     if(!sectionName || !sectionId)
     {
@@ -70,25 +76,25 @@ exports.updateSection = async (req, res) => {
             message: "All fields are required.",
           });
     }
+    const section = await Section.findByIdAndUpdate(
+			sectionId,
+			{ sectionName },
+			{ new: true }
+		);
 
-    // find section bt ID and update
-    const updatedSection = await Section.findByIdAndUpdate(
-      { sectionId },
-      { sectionName},
-      { new: true }
-    );
-
-    if (!updatedSection) {
-      return res.status(404).json({
-        success: false,
-        message: "Section not found.",
-      });
-    }
+    const course = await Course.findById(courseId)
+    .populate({
+      path: "courseContent",
+      populate:{
+        path:"subSection",
+      },
+    })
+    .exec();
 
     return res.status(200).json({
       success: true,
-      message: "Section updated successfully",
-      data: updatedSection,
+      message: ("Section updated successfully", section),
+      data: course,
     });
   } 
   catch (error) {
@@ -103,26 +109,40 @@ exports.updateSection = async (req, res) => {
 // Delete a Section by ID
 exports.deleteSection = async (req, res) => {
   try {
-    const { sectionId } = req.params;
+    const { sectionId, courseId }  = req.body;
+		await Course.findByIdAndUpdate(courseId, {
+			$pull: {
+				courseContent: sectionId,
+			}
+		})
+		const section = await Section.findById(sectionId);
+		console.log(sectionId, courseId);
+		if(!section) {
+			return res.status(404).json({
+				success:false,
+				message:"Section not Found",
+			})
+		}
 
-    // find section by id and delete
-    const deletedSection = await Section.findByIdAndDelete(sectionId);
+		//delete sub section
+		await SubSection.deleteMany({_id: {$in: section.subSection}});
 
-    if (!deletedSection) {
-      return res.status(404).json({
-        success: false,
-        message: "Section not found.",
-      });
-    }
+		await Section.findByIdAndDelete(sectionId);
 
-    // also remove the Section reference from the course
-    await Course.findByIdAndUpdate(deletedSection.course, {
-      $pull: { courseContent: sectionId },
-    });
+		//find the updated course and return 
+		const course = await Course.findById(courseId).populate({
+			path:"courseContent",
+			populate: {
+				path: "subSection"
+			}
+		})
+		.exec();
 
     return res.status(200).json({
       success: true,
       message: "Section deleted successfully",
+      // section: section.sectionName,
+      data: course,
     });
   } 
   

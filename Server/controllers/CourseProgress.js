@@ -6,7 +6,7 @@ const Course = require("../models/Course");
 // Update Course Progress
 exports.updateCourseProgress = async (req, res) => {
   const { courseId, subsectionId } = req.body;
-  const userId = req.user.userId; // Ensure this matches your authentication setup
+  const userId = req.user.id; // Ensure this matches your authentication setup
 
   try {
     // Check if the subsection is valid
@@ -63,7 +63,7 @@ exports.updateCourseProgress = async (req, res) => {
 // Get Progress Percentage
 exports.getProgressPercentage = async (req, res) => {
   const { courseId } = req.body;
-  const userId = req.user.userId;
+  const userId = req.user.id;
 
   // Validate input
   if (!courseId) {

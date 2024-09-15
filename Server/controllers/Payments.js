@@ -12,7 +12,7 @@ const CourseProgress = require("../models/CourseProgress");
 exports.createOrder = async (req, res) => {
   try {
     const { courseId } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Find course details
     const course = await Course.findById(courseId);
@@ -85,7 +85,7 @@ exports.verifyPayment = async (req, res) => {
     }
 
     // Payment verified, grant course access to the user
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -212,7 +212,7 @@ exports.verifySignature = async (req, res) => {
 // Send Payment Success Email
 exports.sendPaymentSuccessEmail = async (req, res) => {
   const { orderId, paymentId, amount } = req.body;
-  const userId = req.user.userId;
+  const userId = req.user.id;
 
   if (!orderId || !paymentId || !amount || !userId) {
     return res.status(400).json({

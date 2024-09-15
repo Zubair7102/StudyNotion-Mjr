@@ -94,11 +94,13 @@ exports.isInstructor = async (req, res, next)=>{
 // isAdmin
 exports.isAdmin = (req, res, next)=>{
     try{
+        console.log("printing accountType", req.user.accountType)
         if(req.user.accountType !== "Admin")
         {
             return res.status(401).json({
                 success: false,
-                message: "This is Protected routes for Admin"
+                message: "This is Protected routes for Admin",
+                
             })
         }
         next();

@@ -7,44 +7,49 @@ const mailSender = require("../utils/mailSender");
 // request password Reset
 exports.requestPasswordReset = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email;
 
-    // check if the user exits
-    const user = await User.findOne({ email });
+    // Check if the user exists
+    const user = await User.findOne({ email: email });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not Found",
+        message: "User not found",
       });
     }
 
     // Generate a reset token
-    const resetToken = crypto.randomUUID();
-    // update user by adding token and expiration time
+    const resetToken = crypto.randomBytes(20).toString("hex");
+
+    // Update user by adding token and expiration time
     const updateDetails = await User.findOneAndUpdate(
       { email: email },
       {
-        token: token,
-        resetPasswordExpires: Date.now() + 5 * 60 * 1000,
+        token: resetToken,
+        resetPasswordExpires: Date.now() + 3600000, // 1 hour
       },
       { new: true }
     );
+    console.log("DETAILS", updateDetails);
 
-    // create reset password URL
-    const resetUrl = `http://localhost:3000/update-password/${token}`;
-    // send mail
+    // Create reset password URL
+    const resetUrl = `http://localhost:3000/update-password/${resetToken}`;
+
+    // Send mail
     await mailSender(
-      user.email,
-      "Password Reset Request",
+      email,
+      "Password Reset",
       `<p>You requested a password reset. Click the link below to set a new password:</p>
-             <a href="${resetUrl}">Reset Password</a>
-             <p>If you did not request this, please ignore this email.</p>`
+      <a href="${resetUrl}">Reset Password</a>
+      <p>If you did not request this, please ignore this email.</p>`
     );
+
     return res.status(200).json({
       success: true,
       message: "Password reset link sent to your email",
     });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error("Error in password reset request:", error.message);
     return res.status(500).json({
       success: false,
@@ -81,7 +86,7 @@ exports.resetPassword = async (req, res)=>{
         // token time check
         if(userDetails.resetPasswordExpires < Date.now())
         {
-            return res.status(401).json({
+            return res.status(403).json({
                 success: false,
                 message: "Token is expired",
             });
