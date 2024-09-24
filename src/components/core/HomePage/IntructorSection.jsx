@@ -34,8 +34,6 @@ const IntructorSection = () => {
                   </div>
               </CTAButton>
           </div>
-
-
       </div>
 
     </div>

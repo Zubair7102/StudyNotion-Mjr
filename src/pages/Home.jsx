@@ -8,6 +8,7 @@ import CodeBlocks from "../components/core/HomePage/CodeBlocks";
 import LearningLanguageSection from "../components/core/HomePage/LearningLanguageSection"
 import TimeLineSection from "../components/core/HomePage/TimeLineSection";
 import IntructorSection from "../components/core/HomePage/IntructorSection";
+import Footer from "../components/common/Footer"
 const Home = () => {
   return (
     <div>
@@ -179,7 +180,7 @@ const Home = () => {
       <div className="w-11/12 mx-auto max-w-maxContent flex-col items-center justify-between gap-8 first-letter bg-richblack-900 text-white">
         <IntructorSection />
 
-        <h2 className="text-center text-4xl font-semobold mt-10">
+        <h2 className="text-center text-4xl font-semobold mt-10 mb-10">
           Review From Other Learners
         </h2>
         {/* Review Slider here */}
@@ -187,7 +188,7 @@ const Home = () => {
       </div>
 
       {/*Footer */}
-      {/* <Footer /> */}
+      <Footer/>
     </div>
   );
 };
