@@ -21,6 +21,8 @@ const ExploreMore = () => {
   const setMyCards = (value) => {
     setCurrentTab(value);
     const result = HomePageExplore.filter((course) => course.tag === value);
+    // The filter() method creates a new array (result) by going through each course object in HomePageExplore and checking if the tag property of the course matches the value.
+    // Only courses whose tag equals value will be included in result. This step filters out courses based on their category, subject, or label (represented by the value). 
     setCourses(result[0].courses);
     setCurrentCard(result[0].courses[0].heading);
   };
@@ -31,7 +33,7 @@ const ExploreMore = () => {
       <div>
         <div className="text-4xl font-semibold text-center my-10">
           Unlock the
-          <HighlightText text={"Power of Code"} />
+          <HighlightText text={" Power of Code"} />
           <p className="text-center text-richblack-300 text-lg font-semibold mt-1">
             Learn to Build Anything You Can Imagine
           </p>
@@ -40,18 +42,18 @@ const ExploreMore = () => {
 
       {/* Tabs Section */}
       <div className="hidden lg:flex gap-5 -mt-5 mx-auto w-max bg-richblack-800 text-richblack-200 p-1 rounded-full font-medium drop-shadow-[0_1.5px_rgba(255,255,255,0.25)]">
-        {tabsName.map((ele, index) => {
+        {tabsName.map((element, index) => {
           return (
             <div
               className={` text-[16px] flex flex-row items-center gap-2 ${
-                currentTab === ele
+                currentTab === element
                   ? "bg-richblack-900 text-richblack-5 font-medium"
                   : "text-richblack-200"
               } px-7 py-[7px] rounded-full transition-all duration-200 cursor-pointer hover:bg-richblack-900 hover:text-richblack-5`}
               key={index}
-              onClick={() => setMyCards(ele)}
+              onClick={() => setMyCards(element)}
             >
-              {ele}
+              {element}
             </div>
           );
         })}

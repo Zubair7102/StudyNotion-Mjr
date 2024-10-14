@@ -124,6 +124,9 @@ exports.signUp = async (req, res) => {
     const recentOtp = await OTP.find({ email })
       .sort({ createdAt: -1 })
       .limit(1);
+      // { createdAt: -1 } indicates that we want to sort the documents by the createdAt field in descending order. This means the newest documents (with the most recent createdAt timestamps) will come first.
+      // The -1 is used for descending order, while 1 would indicate ascending order.
+      // limit(1) means we only want the most recent document from the sorted results.
 
     console.log("recentOtp: ", recentOtp);
 
@@ -224,22 +227,26 @@ exports.login = async (req, res) => {
         {
           expiresIn: "24h",
         }
-      )
+      );
 
       // Save token to user document in database
-      user.token = token
-      user.password = undefined
+      user.token = token;
+      user.password = undefined;
       // Set cookie for token and return success response
       const options = {
         expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         httpOnly: true,
-      }
+      };
+      //       res.cookie is a method provided by Express.js to set a cookie on the response object that will be sent to the client.
+      // The first argument, "token", is the name of the cookie. This means the cookie will be named token.
+      // The second argument, token, is the value that will be stored in the cookie. This is typically a string (like a JWT or session ID) that identifies the user session or other relevant information.
+      // The third argument, options, is the settings object we created earlier, which specifies when the cookie expires and that it should be httpOnly.
       res.cookie("token", token, options).status(200).json({
         success: true,
         token,
         user,
         message: `User Login Success`,
-      })
+      });
     } else {
       return res.status(401).json({
         success: false,
